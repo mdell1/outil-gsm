@@ -69,7 +69,7 @@ function App() {
     return { eirp, plMax }
   }
 
-  // CORRECTION: Modèle Okumura-Hata corrigé
+  // ✅ MODIFIÉ: Modèle Okumura-Hata avec support de l'urbain dense
   const calculatePathLoss = (site, distance) => {
     if (distance < 0.1) return 50 // Distance minimale
     
@@ -79,7 +79,7 @@ function App() {
 
     // Facteur de correction pour la hauteur du mobile
     let aCorrectionFactor
-    if (site.environment === 'urban') {
+    if (site.environment === 'urban' || site.environment === 'dense-urban') {
       if (f >= 400) {
         aCorrectionFactor = 3.2 * Math.pow(Math.log10(11.75 * hm), 2) - 4.97
       } else {
@@ -92,11 +92,14 @@ function App() {
     // Formule Okumura-Hata de base
     let pathLoss = 69.55 + 26.16 * Math.log10(f) - 13.82 * Math.log10(hb) - aCorrectionFactor + (44.9 - 6.55 * Math.log10(hb)) * Math.log10(distance)
 
-    // Corrections environnementales
+    // ✅ MODIFIÉ: Corrections environnementales avec urbain dense
     if (site.environment === 'suburban') {
       pathLoss -= 2 * Math.pow(Math.log10(f / 28), 2) + 5.4
     } else if (site.environment === 'rural') {
       pathLoss -= 4.78 * Math.pow(Math.log10(f), 2) + 18.33 * Math.log10(f) - 40.94
+    } else if (site.environment === 'dense-urban') {
+      // Urbain dense: pertes supplémentaires de +3 dB dues aux bâtiments hauts et réflexions multiples
+      pathLoss += 3
     }
 
     return pathLoss
@@ -180,6 +183,17 @@ function App() {
     if (cir > 6) return '#ff3300'         // Orange-rouge - Mauvais
     if (cir > 5) return '#ff0033'         // Rouge-orange
     return '#ff0066'                      // Rouge-magenta - Critique
+  }
+
+  // ✅ AJOUTÉ: Fonction pour obtenir le label de l'environnement
+  const getEnvironmentLabel = (env) => {
+    const labels = {
+      'urban': 'Urbain',
+      'dense-urban': 'Urbain Dense',
+      'suburban': 'Suburbain',
+      'rural': 'Rural'
+    }
+    return labels[env] || env
   }
 
   const handleAddSite = () => {
@@ -419,6 +433,7 @@ function App() {
               lon: s.lon,
               frequency: s.frequency,
               txPower: s.txPower,
+              environment: s.environment,
               results: s.results
             }))
           }
@@ -520,7 +535,7 @@ function App() {
                       <circle cx="5" cy="5" r="1.5" fill="currentColor"/>
                       <circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="0.7" fill="none"/>
                     </svg>
-                    {site.frequency} MHz • {site.environment}
+                    {site.frequency} MHz • {getEnvironmentLabel(site.environment)}
                   </div>
                   <div>
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -582,6 +597,7 @@ function App() {
                         <h3>{site.name}</h3>
                         <p><strong>Position:</strong> {site.lat.toFixed(5)}, {site.lon.toFixed(5)}</p>
                         <p><strong>Fréquence:</strong> {site.frequency} MHz</p>
+                        <p><strong>Environnement:</strong> {getEnvironmentLabel(site.environment)}</p>
                         <p><strong>Puissance:</strong> {site.txPower} dBm</p>
                         <p><strong>Hauteur:</strong> {site.txAntennaHeight} m</p>
                         <p><strong>Portée:</strong> {site.results?.maxDistance} km</p>
@@ -769,7 +785,15 @@ function App() {
                     </svg>
                     Environnement
                   </h4>
-                  <div className="param-row"><label>Type</label><select value={selectedSite.environment} onChange={(e) => handleUpdateSite(selectedSite.id, { environment: e.target.value })}><option value="urban">Urbain</option><option value="suburban">Suburbain</option><option value="rural">Rural</option></select></div>
+                  <div className="param-row">
+                    <label>Type</label>
+                    <select value={selectedSite.environment} onChange={(e) => handleUpdateSite(selectedSite.id, { environment: e.target.value })}>
+                      <option value="dense-urban">Urbain Dense</option>
+                      <option value="urban">Urbain</option>
+                      <option value="suburban">Suburbain</option>
+                      <option value="rural">Rural</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="results-summary">
                   <h4>
@@ -816,7 +840,15 @@ function App() {
               </div>
               <div className="form-row-group">
                 <div className="form-row"><label>Fréquence</label><select value={newSite.frequency} onChange={(e) => setNewSite({...newSite, frequency: parseFloat(e.target.value)})}><option value="900">GSM 900 MHz</option><option value="1800">DCS 1800 MHz</option></select></div>
-                <div className="form-row"><label>Environnement</label><select value={newSite.environment} onChange={(e) => setNewSite({...newSite, environment: e.target.value})}><option value="urban">Urbain</option><option value="suburban">Suburbain</option><option value="rural">Rural</option></select></div>
+                <div className="form-row">
+                  <label>Environnement</label>
+                  <select value={newSite.environment} onChange={(e) => setNewSite({...newSite, environment: e.target.value})}>
+                    <option value="dense-urban">Urbain Dense</option>
+                    <option value="urban">Urbain</option>
+                    <option value="suburban">Suburbain</option>
+                    <option value="rural">Rural</option>
+                  </select>
+                </div>
               </div>
               <div className="form-row-group">
                 <div className="form-row"><label>Puissance TX (dBm)</label><input type="number" value={newSite.txPower} onChange={(e) => setNewSite({...newSite, txPower: parseFloat(e.target.value)})} /></div>
@@ -894,11 +926,12 @@ function App() {
               <div className="sites-table">
                 <h3>Détails par Site</h3>
                 <table>
-                  <thead><tr><th>Site</th><th>Fréq.</th><th>Portée</th><th>Surface</th><th>Capacité</th><th>Blocage</th></tr></thead>
+                  <thead><tr><th>Site</th><th>Environnement</th><th>Fréq.</th><th>Portée</th><th>Surface</th><th>Capacité</th><th>Blocage</th></tr></thead>
                   <tbody>
                     {sites.map(site => (
                       <tr key={site.id}>
                         <td><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: site.color }}></div>{site.name}</div></td>
+                        <td>{getEnvironmentLabel(site.environment)}</td>
                         <td>{site.frequency} MHz</td>
                         <td>{site.results?.maxDistance} km</td>
                         <td>{site.results?.cellArea} km²</td>
