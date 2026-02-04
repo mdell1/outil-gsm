@@ -297,6 +297,16 @@ function App() {
     const effectiveCapacity = site.numChannels * site.sectors
     const blockingProb = erlangB(site.traffic, effectiveCapacity)
 
+    // ✅ SURFACE EFFECTIVE avec facteur de correction selon l'environnement
+    const surfaceCorrection = {
+      'dense-urban': 0.6,  // 60% de la surface théorique (obstacles denses)
+      'urban': 0.75,       // 75% (obstacles modérés)
+      'suburban': 0.9,     // 90% (peu d'obstacles)
+      'rural': 0.95        // 95% (très peu d'obstacles)
+    }
+    const theoreticalArea = Math.PI * maxDistance * maxDistance
+    const effectiveArea = theoreticalArea * (surfaceCorrection[site.environment] || 0.75)
+
     return {
       ...site,
       coveragePoints: points,
@@ -304,7 +314,9 @@ function App() {
       results: {
         ...calculateLinkBudget(site),
         maxDistance: maxDistance.toFixed(2),
-        cellArea: (Math.PI * maxDistance * maxDistance).toFixed(2),
+        cellArea: effectiveArea.toFixed(2),
+        theoreticalArea: theoreticalArea.toFixed(2),
+        coverageFactor: ((surfaceCorrection[site.environment] || 0.75) * 100).toFixed(0),
         blockingProbability: (blockingProb * 100).toFixed(2),
         effectiveCapacity: effectiveCapacity  // ✅ Nombre entier de canaux
       }
@@ -806,7 +818,9 @@ function App() {
                   </h4>
                   <div className="result-item"><span>PIRE:</span><strong>{selectedSite.results?.eirp.toFixed(2)} dBm</strong></div>
                   <div className="result-item"><span>Portée max:</span><strong>{selectedSite.results?.maxDistance} km</strong></div>
-                  <div className="result-item"><span>Surface:</span><strong>{selectedSite.results?.cellArea} km²</strong></div>
+                  <div className="result-item"><span>Surface effective:</span><strong>{selectedSite.results?.cellArea} km²</strong></div>
+                  <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Surface théorique:</span><strong>{selectedSite.results?.theoreticalArea} km²</strong></div>
+                  <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Facteur de couv.:</span><strong>{selectedSite.results?.coverageFactor}%</strong></div>
                   <div className="result-item"><span>Capacité:</span><strong>{selectedSite.results?.effectiveCapacity} canaux</strong></div>
                 </div>
               </div>
