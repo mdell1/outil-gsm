@@ -848,7 +848,6 @@ function App() {
                     <span>Taux de blocage:</span>
                     <strong style={{color: selectedSite.results?.blockingProbability > 10 ? '#ff0000' : selectedSite.results?.blockingProbability > 2 ? '#ff9900' : '#00ff00'}}>
                       {selectedSite.results?.blockingProbability}%
-                      {selectedSite.results?.blockingProbability > 10 ? ' 🚨 Critique' : selectedSite.results?.blockingProbability > 2 ? ' ⚠️ Acceptable' : ' ✅ Excellent'}
                     </strong>
                   </div>
                 </div>
