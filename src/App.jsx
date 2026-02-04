@@ -222,7 +222,7 @@ function App() {
     })
   }
 
-  // CORRECTION: Calcul de couverture avec ÉNORMÉMENT de points pour heatmap ultra-dense
+  // ✅ FONCTION CORRIGÉE
   const calculateSiteCoverage = (site) => {
     const { plMax } = calculateLinkBudget(site)
 
@@ -237,7 +237,7 @@ function App() {
       }
     }
 
-    // CORRECTION: Générer ÉNORMÉMENT de points pour une heatmap ultra-dense avec dégradé parfait
+    // Générer les points de couverture
     const points = []
     const sectorsToGenerate = site.sectors || 1
     const anglePerSector = 360 / sectorsToGenerate
@@ -247,9 +247,8 @@ function App() {
       const startAngle = (sectorAzimuth - site.beamwidth / 2) * Math.PI / 180
       const endAngle = (sectorAzimuth + site.beamwidth / 2) * Math.PI / 180
 
-      // AUGMENTATION DRASTIQUE pour un dégradé ultra-lisse
-      const numCircles = 50  // 50 cercles concentriques (au lieu de 15)
-      const numPointsPerArc = 100  // 100 points par arc (au lieu de 30)
+      const numCircles = 50
+      const numPointsPerArc = 100
 
       for (let circle = 1; circle <= numCircles; circle++) {
         const radius = (circle / numCircles) * maxDistance
@@ -280,8 +279,9 @@ function App() {
       }
     }
 
-    const blockingProb = erlangB(site.traffic, site.numChannels)
-    const capacity = site.numChannels * (1 - blockingProb)
+    // ✅ CORRECTION DU CALCUL DE CAPACITÉ
+    const effectiveCapacity = site.numChannels * site.sectors
+    const blockingProb = erlangB(site.traffic, effectiveCapacity)
 
     return {
       ...site,
@@ -291,8 +291,8 @@ function App() {
         ...calculateLinkBudget(site),
         maxDistance: maxDistance.toFixed(2),
         cellArea: (Math.PI * maxDistance * maxDistance).toFixed(2),
-        blockingProbability: (blockingProb * 100).toFixed(3),
-        effectiveCapacity: capacity.toFixed(2)
+        blockingProbability: (blockingProb * 100).toFixed(2),
+        effectiveCapacity: effectiveCapacity  // ✅ Nombre entier de canaux
       }
     }
   }
@@ -316,18 +316,19 @@ function App() {
     }
   }
 
+  // ✅ FONCTION CORRIGÉE
   const calculateGlobalStats = () => {
     if (sites.length === 0) return
 
     const totalArea = sites.reduce((sum, site) => sum + parseFloat(site.results.cellArea), 0)
-    const totalCapacity = sites.reduce((sum, site) => sum + parseFloat(site.results.effectiveCapacity), 0)
+    const totalCapacity = sites.reduce((sum, site) => sum + site.results.effectiveCapacity, 0)
     const avgBlockingProb = sites.reduce((sum, site) => sum + parseFloat(site.results.blockingProbability), 0) / sites.length
 
     setGlobalStats({
       totalSites: sites.length,
       totalArea: totalArea.toFixed(2),
-      totalCapacity: totalCapacity.toFixed(2),
-      avgBlockingProb: avgBlockingProb.toFixed(3)
+      totalCapacity: totalCapacity,  // ✅ Pas de toFixed pour les entiers
+      avgBlockingProb: avgBlockingProb.toFixed(2)
     })
     setShowResults(true)
   }
