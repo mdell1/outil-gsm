@@ -252,13 +252,14 @@ function App() {
     }
 
     // ✅ NOUVEAU: Calculer le rayon effectif basé sur le facteur de correction
+    // Facteurs réalistes basés sur les conditions réelles de propagation
     const surfaceCorrection = {
-      'dense-urban': 0.40,
-      'urban': 0.65,
-      'suburban': 0.85,
-      'rural': 0.95
+      'dense-urban': 0.35,  // 35% - Centres-villes, immeubles hauts
+      'urban': 0.50,        // 50% - Ville moyenne avec bâtiments
+      'suburban': 0.70,     // 70% - Zones résidentielles avec obstacles
+      'rural': 0.85         // 85% - Campagne avec relief et végétation
     }
-    const correctionFactor = surfaceCorrection[site.environment] || 0.65
+    const correctionFactor = surfaceCorrection[site.environment] || 0.50
     
     // Rayon effectif = rayon théorique × √(facteur de correction)
     // Car Surface = π × r², donc r_eff = r_theo × √facteur
