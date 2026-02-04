@@ -807,7 +807,6 @@ function App() {
                     <label style={{fontSize: '0.85em', opacity: 0.8}}>Taux de blocage</label>
                     <strong style={{color: selectedSite.results?.blockingProbability > 10 ? '#ff0000' : selectedSite.results?.blockingProbability > 2 ? '#ff9900' : '#00ff00'}}>
                       {selectedSite.results?.blockingProbability}%
-                      {selectedSite.results?.blockingProbability > 10 ? ' 🚨' : selectedSite.results?.blockingProbability > 2 ? ' ⚠️' : ' ✅'}
                     </strong>
                   </div>
                 </div>
