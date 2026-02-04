@@ -791,6 +791,29 @@ function App() {
                 <div className="param-group">
                   <h4>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}>
+                      <rect x="1" y="6" width="2.5" height="5" fill="currentColor"/>
+                      <rect x="4.75" y="4" width="2.5" height="7" fill="currentColor"/>
+                      <rect x="8.5" y="2" width="2.5" height="9" fill="currentColor"/>
+                    </svg>
+                    Capacité & Trafic
+                  </h4>
+                  <div className="param-row"><label>Canaux/secteur</label><input type="number" min="1" max="16" value={selectedSite.numChannels} onChange={(e) => handleUpdateSite(selectedSite.id, { numChannels: parseInt(e.target.value) })} /></div>
+                  <div className="param-row"><label>Trafic (Erlangs)</label><input type="number" min="1" max="100" step="1" value={selectedSite.traffic} onChange={(e) => handleUpdateSite(selectedSite.id, { traffic: parseFloat(e.target.value) })} /></div>
+                  <div className="param-row" style={{marginTop: '8px', padding: '8px', backgroundColor: 'rgba(0,212,255,0.1)', borderRadius: '4px'}}>
+                    <label style={{fontSize: '0.85em', opacity: 0.8}}>Capacité totale</label>
+                    <strong style={{color: '#00d4ff'}}>{selectedSite.numChannels * selectedSite.sectors} canaux</strong>
+                  </div>
+                  <div className="param-row" style={{padding: '8px', backgroundColor: selectedSite.results?.blockingProbability > 10 ? 'rgba(255,0,0,0.1)' : selectedSite.results?.blockingProbability > 2 ? 'rgba(255,165,0,0.1)' : 'rgba(0,255,0,0.1)', borderRadius: '4px'}}>
+                    <label style={{fontSize: '0.85em', opacity: 0.8}}>Taux de blocage</label>
+                    <strong style={{color: selectedSite.results?.blockingProbability > 10 ? '#ff0000' : selectedSite.results?.blockingProbability > 2 ? '#ff9900' : '#00ff00'}}>
+                      {selectedSite.results?.blockingProbability}%
+                      {selectedSite.results?.blockingProbability > 10 ? ' 🚨' : selectedSite.results?.blockingProbability > 2 ? ' ⚠️' : ' ✅'}
+                    </strong>
+                  </div>
+                </div>
+                <div className="param-group">
+                  <h4>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}>
                       <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1" fill="none"/>
                       <path d="M3 6C3 6 4.5 4 6 4C7.5 4 9 6 9 6" stroke="currentColor" strokeWidth="1" fill="none"/>
                       <path d="M3 8C3 8 4.5 7 6 7C7.5 7 9 8 9 8" stroke="currentColor" strokeWidth="0.8" fill="none"/>
@@ -821,7 +844,14 @@ function App() {
                   <div className="result-item"><span>Surface effective:</span><strong>{selectedSite.results?.cellArea} km²</strong></div>
                   <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Surface théorique:</span><strong>{selectedSite.results?.theoreticalArea} km²</strong></div>
                   <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Facteur de couv.:</span><strong>{selectedSite.results?.coverageFactor}%</strong></div>
-                  <div className="result-item"><span>Capacité:</span><strong>{selectedSite.results?.effectiveCapacity} canaux</strong></div>
+                  <div className="result-item"><span>Capacité totale:</span><strong>{selectedSite.results?.effectiveCapacity} canaux</strong></div>
+                  <div className="result-item" style={{padding: '8px', marginTop: '4px', backgroundColor: selectedSite.results?.blockingProbability > 10 ? 'rgba(255,0,0,0.15)' : selectedSite.results?.blockingProbability > 2 ? 'rgba(255,165,0,0.15)' : 'rgba(0,255,0,0.15)', borderRadius: '4px', border: '1px solid ' + (selectedSite.results?.blockingProbability > 10 ? '#ff0000' : selectedSite.results?.blockingProbability > 2 ? '#ff9900' : '#00ff00')}}>
+                    <span>Taux de blocage:</span>
+                    <strong style={{color: selectedSite.results?.blockingProbability > 10 ? '#ff0000' : selectedSite.results?.blockingProbability > 2 ? '#ff9900' : '#00ff00'}}>
+                      {selectedSite.results?.blockingProbability}%
+                      {selectedSite.results?.blockingProbability > 10 ? ' 🚨 Critique' : selectedSite.results?.blockingProbability > 2 ? ' ⚠️ Acceptable' : ' ✅ Excellent'}
+                    </strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -869,6 +899,10 @@ function App() {
                 <div className="form-row"><label>Gain antenne (dBi)</label><input type="number" value={newSite.txAntennaGain} onChange={(e) => setNewSite({...newSite, txAntennaGain: parseFloat(e.target.value)})} /></div>
               </div>
               <div className="form-row"><label>Nombre de secteurs</label><select value={newSite.sectors} onChange={(e) => setNewSite({...newSite, sectors: parseInt(e.target.value)})}><option value="1">1 - Omnidirectionnel</option><option value="3">3 - Tri-sectoriel</option><option value="6">6 - Hexa-sectoriel</option></select></div>
+              <div className="form-row-group">
+                <div className="form-row"><label>Canaux par secteur</label><input type="number" min="1" max="16" value={newSite.numChannels} onChange={(e) => setNewSite({...newSite, numChannels: parseInt(e.target.value)})} /></div>
+                <div className="form-row"><label>Trafic (Erlangs)</label><input type="number" min="1" max="100" step="1" value={newSite.traffic} onChange={(e) => setNewSite({...newSite, traffic: parseFloat(e.target.value)})} /></div>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setShowAddSite(false)}>Annuler</button>
