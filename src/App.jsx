@@ -240,18 +240,31 @@ function App() {
   const calculateSiteCoverage = (site) => {
     const { plMax } = calculateLinkBudget(site)
 
-    // Trouver la distance maximale de couverture
-    let maxDistance = 0.1
+    // Trouver la distance maximale de couverture théorique
+    let maxTheoreticalDistance = 0.1
     for (let d = 0.1; d <= 30; d += 0.05) {
       const pl = calculatePathLoss(site, d)
       if (pl <= plMax) {
-        maxDistance = d
+        maxTheoreticalDistance = d
       } else {
         break
       }
     }
 
-    // Générer les points de couverture
+    // ✅ NOUVEAU: Calculer le rayon effectif basé sur le facteur de correction
+    const surfaceCorrection = {
+      'dense-urban': 0.40,
+      'urban': 0.65,
+      'suburban': 0.85,
+      'rural': 0.95
+    }
+    const correctionFactor = surfaceCorrection[site.environment] || 0.65
+    
+    // Rayon effectif = rayon théorique × √(facteur de correction)
+    // Car Surface = π × r², donc r_eff = r_theo × √facteur
+    const maxDistance = maxTheoreticalDistance * Math.sqrt(correctionFactor)
+
+    // Générer les points de couverture jusqu'au rayon EFFECTIF
     const points = []
     const sectorsToGenerate = site.sectors || 1
     const anglePerSector = 360 / sectorsToGenerate
@@ -297,29 +310,24 @@ function App() {
     const effectiveCapacity = site.numChannels * site.sectors
     const blockingProb = erlangB(site.traffic, effectiveCapacity)
 
-    // ✅ SURFACE EFFECTIVE avec facteur de correction selon l'environnement
-    // Basé sur les standards de l'industrie (ITU, 3GPP) et la littérature technique
-    const surfaceCorrection = {
-      'dense-urban': 0.40,  // 40% - Urbain dense (50-60% de pertes supplémentaires)
-      'urban': 0.65,        // 65% - Urbain (30-40% de pertes)
-      'suburban': 0.85,     // 85% - Suburbain (10-20% de pertes)
-      'rural': 0.95         // 95% - Rural (5-10% de pertes)
-    }
-    const theoreticalArea = Math.PI * maxDistance * maxDistance
-    const effectiveArea = theoreticalArea * (surfaceCorrection[site.environment] || 0.75)
+    // ✅ SURFACE EFFECTIVE - maintenant cohérente avec le rayon effectif
+    const theoreticalArea = Math.PI * maxTheoreticalDistance * maxTheoreticalDistance
+    const effectiveArea = Math.PI * maxDistance * maxDistance
 
     return {
       ...site,
       coveragePoints: points,
-      maxDistance,
+      maxDistance,  // Rayon effectif (affiché sur la carte)
+      maxTheoreticalDistance,  // Rayon théorique (pour référence)
       results: {
         ...calculateLinkBudget(site),
         maxDistance: maxDistance.toFixed(2),
+        maxTheoreticalDistance: maxTheoreticalDistance.toFixed(2),
         cellArea: effectiveArea.toFixed(2),
         theoreticalArea: theoreticalArea.toFixed(2),
-        coverageFactor: ((surfaceCorrection[site.environment] || 0.75) * 100).toFixed(0),
+        coverageFactor: (correctionFactor * 100).toFixed(0),
         blockingProbability: (blockingProb * 100).toFixed(2),
-        effectiveCapacity: effectiveCapacity  // ✅ Nombre entier de canaux
+        effectiveCapacity: effectiveCapacity
       }
     }
   }
@@ -841,7 +849,8 @@ function App() {
                     Résultats
                   </h4>
                   <div className="result-item"><span>PIRE:</span><strong>{selectedSite.results?.eirp.toFixed(2)} dBm</strong></div>
-                  <div className="result-item"><span>Portée max:</span><strong>{selectedSite.results?.maxDistance} km</strong></div>
+                  <div className="result-item"><span>Portée effective:</span><strong>{selectedSite.results?.maxDistance} km</strong></div>
+                  <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Portée théorique:</span><strong>{selectedSite.results?.maxTheoreticalDistance} km</strong></div>
                   <div className="result-item"><span>Surface effective:</span><strong>{selectedSite.results?.cellArea} km²</strong></div>
                   <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Surface théorique:</span><strong>{selectedSite.results?.theoreticalArea} km²</strong></div>
                   <div className="result-item" style={{fontSize: '0.85em', opacity: 0.7}}><span>Facteur de couv.:</span><strong>{selectedSite.results?.coverageFactor}%</strong></div>
